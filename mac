@@ -116,7 +116,6 @@ gem_install_or_update() {
     gem update "$@"
   else
     gem install "$@"
-    rbenv rehash
   fi
 }
 
@@ -147,31 +146,19 @@ brew_install_or_upgrade 'ctags'
 brew_install_or_upgrade 'git'
 brew_install_or_upgrade 'openssl'
 brew unlink openssl && brew link openssl --force
-brew_install_or_upgrade 'rcm'
-brew_install_or_upgrade 'reattach-to-user-namespace'
-brew_install_or_upgrade 'the_silver_searcher'
 brew_install_or_upgrade 'tmux'
 brew_install_or_upgrade 'vim'
 brew_install_or_upgrade 'zsh'
 
-fancy_echo "Updating Heroku tools ..."
-brew_install_or_upgrade 'heroku-toolbelt'
-brew_install_or_upgrade 'parity'
-
 fancy_echo "Updating GitHub tools ..."
 brew_install_or_upgrade 'hub'
-
-fancy_echo "Updating image tools ..."
-brew_install_or_upgrade 'imagemagick'
-
-fancy_echo "Updating testing tools ..."
-brew_install_or_upgrade 'qt'
 
 fancy_echo "Updating programming languages ..."
 brew_install_or_upgrade 'libyaml' # should come after openssl
 brew_install_or_upgrade 'node'
-brew_install_or_upgrade 'rbenv'
+brew_install_or_upgrade 'chruby'
 brew_install_or_upgrade 'ruby-build'
+brew_install_or_upgrade 'ruby-install'
 
 fancy_echo "Updating databases ..."
 brew_install_or_upgrade 'postgres'
@@ -180,25 +167,32 @@ brew_launchctl_restart 'postgresql'
 brew_launchctl_restart 'redis'
 
 fancy_echo "Configuring Ruby ..."
-find_latest_ruby() {
-  rbenv install -l | grep -v - | tail -1 | sed -e 's/^ *//'
-}
-
-ruby_version="$(find_latest_ruby)"
+ruby_version="2.2.2"
 # shellcheck disable=SC2016
-append_to_zshrc 'eval "$(rbenv init - --no-rehash)"' 1
-eval "$(rbenv init -)"
+append_to_zshrc 'source /usr/local/opt/chruby/share/chruby/chruby.sh' 1
+append_to_zshrc 'source /usr/local/share/chruby/auto.sh' 1
 
-if ! rbenv versions | grep -Fq "$ruby_version"; then
-  rbenv install -s "$ruby_version"
-fi
+eval "source /usr/local/opt/chruby/share/chruby/chruby.sh"
 
-rbenv global "$ruby_version"
-rbenv shell "$ruby_version"
+ruby-install ruby 2.2.2
+chruby ruby 2.2.2
+
 gem update --system
 gem_install_or_update 'bundler'
 number_of_cores=$(sysctl -n hw.ncpu)
 bundle config --global jobs $((number_of_cores - 1))
+
+
+brew_install_or_upgrade 'memcached'
+brew_launchctl_restart 'memcached'
+brew_install_or_upgrade 'mysql'
+brew_launchctl_restart 'mysql'
+brew cask install 'java'
+brew_install_or_upgrade 'elasticsearch'
+brew_launchctl_restart 'elasticsearch'
+brew_install_or_upgrade 'cassandra'
+brew_launchctl_restart 'cassandra'
+
 
 if [ -f "$HOME/.laptop.local" ]; then
   fancy_echo "Running your customizations from ~/.laptop.local ..."
