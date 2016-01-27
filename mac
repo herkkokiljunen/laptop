@@ -119,6 +119,11 @@ gem_install_or_update() {
   fi
 }
 
+ruby_is_installed() {
+  local name
+  chruby | grep $1
+}
+
 if ! command -v brew >/dev/null; then
   fancy_echo "Installing Homebrew ..."
     curl -fsS \
@@ -174,8 +179,16 @@ append_to_zshrc 'source /usr/local/share/chruby/auto.sh' 1
 
 eval "source /usr/local/opt/chruby/share/chruby/chruby.sh"
 
-ruby-install ruby 2.2.2
-chruby ruby 2.2.2
+if ruby_is_installed "ruby-$ruby_version"; then
+  fancy_echo "Ruby $ruby_version is installed"
+  chruby ruby $ruby_version
+else
+  fancy_echo "Ruby $ruby_version is not installed. Installing..."
+    ruby-install ruby 2.2.2
+  chruby ruby 2.2.2
+fi
+
+
 
 gem update --system
 gem_install_or_update 'bundler'
@@ -190,7 +203,7 @@ brew_launchctl_restart 'mysql'
 brew cask install 'java'
 brew_install_or_upgrade 'elasticsearch'
 brew_launchctl_restart 'elasticsearch'
-brew_install_or_upgrade 'cassandra'
+brew_install_or_upgrade 'homebrew/versions/cassandra22'
 brew_launchctl_restart 'cassandra'
 
 
